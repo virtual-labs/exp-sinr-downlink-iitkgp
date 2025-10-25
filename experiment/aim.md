@@ -1,14 +1,12 @@
 ## Aim of experiment
 
-To understand the pathloss prediction formula.
+To understand theconcept of co-channel interference and hence Signal to Interference and Noise Ratio.
 
 ### Objective:
 
+1. Downlink:
+To calculate & plot SINR vs. distance at the MS for adaptation of the following parameters:
 
-1. Calculation of received signal strength as a function of distance of separation, antenna height and carrier frequency.
-2. To understand the impact of :-
-- Transmitter Power,
-- Pathloss exponent,
-- Carrier frequency,
-- Receiver antenna height,
-- Transmitter antenna height.
+- Shadowing effect,
+- Vertical Beam Pattern,
+- Tilt Angle variation.
