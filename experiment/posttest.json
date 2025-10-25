@@ -1,39 +1,118 @@
-{
-  "version": 2.0,
+
+  {
+	  "version": 2.0,
   "questions": [
-    {
-      "question": "This is a Sample Question 1?",
-      "answers": {
-        "a": "answer1",
-        "b": "answer2",
-        "c": "answer3",
-        "d": "answer4"
-      },
-      "explanations": {
-        "a": "Explanation 1  <a href='www.google.com'>here</a>",
-        "b": "Explanation 2",
-        "c": "Explanation 2",
-        "d": "Explanation 2"
-      },
-      "correctAnswer": "a",
-      "difficulty": "beginner"
+      {
+    "question": "1. Why is SINR considered a more critical metric than SNR in most cellular systems?",
+    "answers": {
+      "a": "Because noise is always zero.",
+      "b": "Because interference from other cells is often the main factor limiting performance.",
+      "c": "Because SINR is easier to calculate.",
+      "d": "Because SNR does not account for the desired signal."
     },
-    {
-      "question": "This is a Sample Question 2?",
-      "answers": {
-        "a": "answer1",
-        "b": "answer2",
-        "c": "answer3",
-        "d": "answer4"
-      },
-      "explanations": {
-        "a": "Explanation 1  <a href='www.google.com'>here</a>",
-        "b": "Explanation 2",
-        "c": "Explanation 2",
-        "d": "Explanation 2"
-      },
-      "correctAnswer": "c",
-      "difficulty": "beginner"
-    }
+    "correctAnswer": "b",
+    "difficulty": "medium"
+  },
+  {
+    "question": "2. If a mobile user moves *closer* to their serving base station, what generally happens to their downlink SINR?",
+    "answers": {
+      "a": "It decreases, because interference increases.",
+      "b": "It stays the same.",
+      "c": "It increases, because the desired signal strength increases.",
+      "d": "It becomes zero."
+    },
+    "correctAnswer": "c",
+    "difficulty": "beginner"
+  },
+  {
+    "question": "3. If a mobile user moves *closer* to a co-channel interfering base station, what generally happens to their downlink SINR?",
+    "answers": {
+      "a": "It decreases, because the interference strength increases.",
+      "b": "It increases, because the desired signal strength increases.",
+      "c": "It stays the same.",
+      "d": "It increases, because noise decreases."
+    },
+    "correctAnswer": "a",
+    "difficulty": "medium"
+  },
+  {
+    "question": "4. What is the difference between 'mechanical tilt' and 'electrical tilt'?",
+    "answers": {
+      "a": "There is no difference.",
+      "b": "Mechanical tilt physically angles the antenna; electrical tilt adjusts the signal phase to steer the beam.",
+      "c": "Mechanical tilt is for horizontal patterns; electrical tilt is for vertical patterns.",
+      "d": "Mechanical tilt requires power; electrical tilt does not."
+    },
+    "correctAnswer": "b",
+    "difficulty": "hard"
+  },
+  {
+    "question": "5. What does the 'noise' component in the SINR calculation typically represent?",
+    "answers": {
+      "a": "Only signals from other base stations.",
+      "b": "Only signals from other mobile phones.",
+      "c": "The background thermal noise in the mobile phone's receiver.",
+      "d": "Bad weather and atmospheric effects."
+    },
+    "correctAnswer": "c",
+    "difficulty": "medium"
+  },
+  {
+    "question": "6. If a serving base station's antenna is tilted *too far down* (excessive downtilt), what might happen to a user at the cell edge?",
+    "answers": {
+      "a": "Their desired signal will become extremely strong.",
+      "b": "They will receive a stronger signal from a neighboring cell.",
+      "c": "Their desired signal may become very weak, as they fall out of the main lobe.",
+      "d": "The interference will become zero."
+    },
+    "correctAnswer": "c",
+    "difficulty": "medium"
+  },
+  {
+    "question": "7. How does 'shadowing' (log-normal fading) complicate SINR calculations?",
+    "answers": {
+      "a": "It makes the signal strength fixed and predictable.",
+      "b": "It only affects the noise, not the signal or interference.",
+      "c": "It turns SINR into a random variable, not a single fixed value.",
+      "d": "It removes all interference."
+    },
+    "correctAnswer": "c",
+    "difficulty": "hard"
+  },
+  {
+    "question": "8. Besides beam tilt, what other antenna property is used to limit interference *horizontally*?",
+    "answers": {
+      "a": "The antenna's height.",
+      "b": "The antenna's horizontal beamwidth (sectoring).",
+      "c": "The antenna's color.",
+      "d": "The antenna's weight."
+    },
+    "correctAnswer": "b",
+    "difficulty": "medium"
+  },
+  {
+    "question": "9. If an interfering base station were to apply 'uptilt' (aiming its beam *up*), what would be the likely effect on a ground-level user in a *different* cell?",
+    "answers": {
+      "a": "The interference would increase significantly.",
+      "b": "The interference would decrease.",
+      "c": "The desired signal would decrease.",
+      "d": "The noise level would increase."
+    },
+    "correctAnswer": "b",
+    "difficulty": "hard"
+  },
+  {
+    "question": "10. In the SINR ratio, what components are in the 'denominator' (the bottom part of the fraction)?",
+    "answers": {
+      "a": "Desired Signal Only",
+      "b": "Interference Only",
+      "c": "Interference plus Noise",
+      "d": "Desired Signal plus Noise"
+    },
+    "correctAnswer": "c",
+    "difficulty": "beginner"
+  }
+
+
   ]
 }
