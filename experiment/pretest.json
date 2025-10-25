@@ -1,8 +1,7 @@
   {
 	  "version": 2.0,
   "questions": [
-    [
-  {
+      {
     "question": "1. In a cellular system, what does SINR stand for?",
     "answers": {
       "a": "Signal-to-Interference-plus-Noise Ratio",
@@ -112,7 +111,6 @@
     "correctAnswer": "c",
     "difficulty": "medium"
   }
-]
 
   ]
 }
