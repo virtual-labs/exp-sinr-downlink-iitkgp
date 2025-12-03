@@ -4,7 +4,7 @@ Follow the instructions given below to perform the experiments:-
 
 ### 1.1 Starting Experiment 5 :-
 
-- Step 1: Click on the experiment you want to do by clicking on either 'Click here to start Experiment 5A (Downlink)' or 'Click here to start Experiment 5B (Uplink)'.
+- Step 1: Click on 'Click here to start '.
 
 <div align="center">
     <img src="images/instruction1.png" alt="Large Scale Fading">  
@@ -12,7 +12,7 @@ Follow the instructions given below to perform the experiments:-
       
 ### 1.2 Starting Experiment 5A :-
 
-- Step 2: Let Experiment 5A (Downlink) is chosen. Click on the button START. A page appears with a dialogue box asking for your name. Enter your name and click OK.
+- Step 2:  A page appears with a dialogue box asking for your name. Enter your name and click OK.
 
 <div align="center">
     <img src="images/instruction2.png" alt="Large Scale Fading">  
@@ -64,14 +64,9 @@ Follow the instructions given below to perform the experiments:-
     <img src="images/instruction9.png" alt="Large Scale Fading">  
       </div>
       
-- Step 11: A dialogue box appears with the message that 'Your report has generated successfully'. Click on button OK in the dialogue box.
-
-<div align="center">
-    <img src="images/instruction10.png" alt="Large Scale Fading">  
-      </div>
       
-- Step 12: Now you can view the pdf report.
+- Step 11: Now you can view the pdf report.
 
-- Step 13: You can repeat the experiment by clicking the RESET button at the upper corner in the LHS of the page.
+- Step 12: You can repeat the experiment by clicking the RESET button at the upper corner in the LHS of the page.
 
  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>   
