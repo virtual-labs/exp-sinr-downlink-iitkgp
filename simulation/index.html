@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SINR Calculation including Beam Tilt</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        /* Custom styles to match the look and feel from the reference image */
+        body {
+            font-family: 'Verdana', sans-serif;
+            background-color: #eef2f3;
+        }
+        .control-panel, .readings-panel, .sinr-panel, .options-panel {
+            background-color: #c9e1f3;
+            border: 2px solid #5a7a9a;
+            border-radius: 0.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .sim-container {
+            background-image: url('images/bg.png');
+            background-size: cover;
+            background-position: center;
+            position: relative;
+            height: 480px; /* Increased height by 20% from 400px */
+            border: 2px solid #5a7a9a;
+            overflow: hidden;
+        }
+        .tower {
+            position: absolute;
+            bottom: 45px;
+            width: 80px;
+            height: auto;
+        }
+        #ms {
+            position: absolute;
+            bottom: 50px;
+            width: 40px;
+            height: auto;
+            cursor: grab;
+            z-index: 10;
+        }
+        #ms:active {
+            cursor: grabbing;
+        }
+        .btn {
+            background-color: #4a90e2;
+            color: white;
+            transition: background-color: 0.3s;
+            border: 1px solid #357abd;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
+        .btn:hover {
+            background-color: #357abd;
+        }
+        .btn:disabled {
+            background-color: #a0aec0;
+            cursor: not-allowed;
+        }
+        .btn-secondary {
+            background-color: #7aa9d4;
+        }
+        .btn-secondary:hover {
+            background-color: #5e8eBA;
+        }
+        .input-field {
+            background-color: white;
+            border: 1px solid #8ab6d6;
+        }
+        .info-box {
+            background-color: rgba(255, 255, 255, 0.8);
+            color: black;
+            padding: 4px 8px;
+            border-radius: 5px;
+            font-size: 0.8rem;
+            position: absolute;
+            transform: translate(-50%, -110%);
+            white-space: nowrap;
+            border: 1px solid black;
+            z-index: 20;
+            pointer-events: none;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #8ab6d6;
+            padding: 4px;
+            text-align: center;
+            font-size: 0.875rem;
+        }
+        th {
+            background-color: #a0c7e4;
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            z-index: 999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #c9e1f3;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            border: 2px solid #8ab6d6;
+        }
+        .tower-label {
+            position: absolute;
+            color: white;
+            background-color: rgba(0,0,0,0.5);
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-size: 0.75rem;
+        }
+        .tilt-control-container {
+             position: absolute;
+            bottom: 25px;
+            color: white;
+            background-color: rgba(0,0,0,0.5);
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-size: 0.75rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4 flex flex-col min-h-screen">
+
+    <div id="initialView" class="text-center p-8 bg-white rounded-lg shadow-lg max-w-2xl mx-auto my-auto">
+        
+        <div class="space-y-4">
+            <button id="startExp5A" class="w-full btn text-lg py-3 rounded-lg">Click here to start </button>
+        </div>
+    </div>
+
+    <div id="nameModal" class="modal-overlay hidden">
+        <div class="modal-content text-center">
+            <h3 class="text-xl font-semibold mb-4">What is your name?</h3>
+            <input type="text" id="userNameInput" class="input-field w-full p-2 rounded-md mb-4">
+            <button id="submitName" class="btn px-6 py-2 rounded-md">OK</button>
+        </div>
+    </div>
+    
+    <div id="pdf-report-container" class="hidden" style="position: absolute; left: -9999px; top: auto; width: 800px; background: white; padding: 20px;">
+        <div id="reportContentForPdf"></div>
+    </div>
+
+
+    <div id="experimentView" class="hidden flex-grow flex-col">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-2 mb-2">
+            <div class="md:col-span-3 control-panel p-2 text-center">
+                <h2 class="font-bold">Exp 5A: Downlink</h2>
+                <p id="welcomeMessage" class="text-sm">Welcome!</p>
+                <button id="resetBtn" class="w-full btn py-1 mt-2 rounded-md">Reset</button>
+            </div>
+            <div class="md:col-span-6 control-panel p-2">
+                 <div class="grid grid-cols-6 gap-x-2 gap-y-1 text-sm items-center">
+                    <label>Pr1(dBm):</label><span id="pr1_display" class="font-bold">0.00</span>
+                    <label>Pr2(dBm):</label><span id="pr2_display" class="font-bold">0.00</span>
+                    <span class="col-span-2"></span>
+
+                    <label>Ptx1(dBm):</label><input type="number" id="pt1" value="41" class="input-field p-1 rounded-md w-full">
+                    <label>Ptx2(dBm):</label><input type="number" id="pt2" value="41" class="input-field p-1 rounded-md w-full">
+                    <label>Pn1(dBm):</label><span id="pn1_display" class="font-bold">-99.84</span>
+                    
+                    <label>Gt1(dB):</label><input type="number" id="gt1" value="1" class="input-field p-1 rounded-md w-full">
+                    <label>Gt2(dB):</label><input type="number" id="gt2" value="1" class="input-field p-1 rounded-md w-full">
+                    <label>Pn2(dBm):</label><span id="pn2_display" class="font-bold">-99.84</span>
+
+                    <label>fc1(GHz):</label><input type="number" id="fc" value="2.0" step="0.1" class="input-field p-1 rounded-md w-full">
+                    <label>fc2(GHz):</label><input type="number" id="fc2" value="2.0" step="0.1" class="input-field p-1 rounded-md w-full">
+                    <span class="col-span-2"></span>
+                    
+                    <label>Gr(dB):</label><input type="number" id="gr" value="1" class="input-field p-1 rounded-md w-full">
+                    <span class="font-mono text-xs col-span-2">BW1(MHz)=5.0</span>
+                    <span class="font-mono text-xs col-span-2">BW2(MHz)=5.0</span>
+                </div>
+            </div>
+            <div class="md:col-span-3 options-panel p-2">
+                 <div class="flex items-center space-x-2">
+                    <input type="checkbox" id="verticalBeam" class="h-4 w-4">
+                    <label for="verticalBeam">Vertical Beam Pattern</label>
+                </div>
+                <div class="flex items-center space-x-2 mt-1">
+                    <input type="checkbox" id="shadowing" class="h-4 w-4">
+                    <label for="shadowing">Shadowing</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex-grow grid grid-cols-1 lg:grid-cols-12 gap-2">
+            <div class="lg:col-span-9 flex flex-col">
+                <div class="sim-container rounded-lg shadow-md">
+                    <img src="images/BS1.png" id="bs1" class="tower" style="left: 5%;">
+                    <div class="tower-label" style="left: 7%; bottom: 45px;">BS1</div>
+                    <div id="tiltControlBS1" class="tilt-control-container hidden" style="left: 7%;">
+                        Tilt(°): <select id="tiltAngleBS1" class="bg-gray-700 text-white text-xs rounded">
+                            <option value="0" selected>0</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                            <option value="9">9</option>
+                            <option value="10">10</option>
+                        </select>
+                    </div>
+                    <div class="tower-label" style="left: 6%; bottom: 5px;">h_BS1: 35.0m</div>
+
+                    <img src="images/BS2.png" id="bs2" class="tower" style="right: 5%;">
+                    <div class="tower-label" style="right: 7%; bottom: 45px;">BS2</div>
+                     <div id="tiltControlBS2" class="tilt-control-container hidden" style="right: 7%;">
+                        Tilt(°): <select id="tiltAngleBS2" class="bg-gray-700 text-white text-xs rounded">
+                            <option value="0" selected>0</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                            <option value="9">9</option>
+                            <option value="10">10</option>
+                        </select>
+                    </div>
+                     <div class="tower-label" style="right: 6%; bottom: 5px;">h_BS2: 35.0m</div>
+
+
+                    <img src="images/mobile.png" id="ms">
+                    <div id="mobile-tooltip" class="info-box"></div>
+                </div>
+                <div class="flex justify-center items-center space-x-4 mt-2">
+                    <button id="moveMinus" class="btn-secondary px-4 py-1 rounded-md">-10m</button>
+                    <button id="takeReadingBtn" class="btn px-6 py-1 rounded-md font-bold">Take Reading</button>
+                    <button id="movePlus" class="btn-secondary px-4 py-1 rounded-md">+10m</button>
+                </div>
+                 <div class="mt-2 flex-grow" style="min-height: 500px;">
+                    <canvas id="plotCanvas"></canvas>
+                </div>
+            </div>
+
+            <div class="lg:col-span-3 flex flex-col gap-2">
+                <div class="readings-panel p-2 rounded-lg shadow-md flex-grow">
+                    <div>
+                        <table id="readingsTable">
+                            <thead><tr><th>Pr1(dBm)</th><th>d1(m)</th><th>Pr2(dBm)</th><th>d2(m)</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="sinr-panel p-2 rounded-lg shadow-md">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <h4 class="text-center font-bold mb-1">SINR1(dB)</h4>
+                            <table id="resultsTable1" class="w-full">
+                                <tbody>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div>
+                            <h4 class="text-center font-bold mb-1">SINR2(dB)</h4>
+                            <table id="resultsTable2" class="w-full">
+                                <tbody>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="submitBtn" class="btn py-2 rounded-md">SUBMIT</button>
+                    <button id="checkBtn" class="btn py-2 rounded-md">CHECK</button>
+                    <button id="plotBtn" class="btn py-2 rounded-md">PLOT</button>
+                    <button id="reportBtn" class="btn py-2 rounded-md">REPORT</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <footer class="text-center text-xs text-gray-600 mt-2">
+        FADING CHANNELS & MOBILE COMMUNICATIONS VIRTUAL LABS - IIT KHARAGPUR
+    </footer>
+
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- DOM ELEMENTS ---
+        const initialView = document.getElementById('initialView');
+        const experimentView = document.getElementById('experimentView');
+        const nameModal = document.getElementById('nameModal');
+        
+        const startExp5A = document.getElementById('startExp5A');
+        const userNameInput = document.getElementById('userNameInput');
+        const submitNameBtn = document.getElementById('submitName');
+        const welcomeMessage = document.getElementById('welcomeMessage');
+
+        const simContainer = document.querySelector('.sim-container');
+        const ms = document.getElementById('ms');
+        const bs1 = document.getElementById('bs1');
+        const bs2 = document.getElementById('bs2');
+        const mobileTooltip = document.getElementById('mobile-tooltip');
+
+        const pt1Input = document.getElementById('pt1');
+        const pt2Input = document.getElementById('pt2');
+        const fcInput = document.getElementById('fc');
+        const fc2Input = document.getElementById('fc2');
+        const pr1Display = document.getElementById('pr1_display');
+        const pr2Display = document.getElementById('pr2_display');
+        const pn1Display = document.getElementById('pn1_display');
+        const pn2Display = document.getElementById('pn2_display');
+
+
+        const verticalBeamCheckbox = document.getElementById('verticalBeam');
+        const shadowingCheckbox = document.getElementById('shadowing');
+        const tiltControlBS1 = document.getElementById('tiltControlBS1');
+        const tiltAngleSelectBS1 = document.getElementById('tiltAngleBS1');
+        const tiltControlBS2 = document.getElementById('tiltControlBS2');
+        const tiltAngleSelectBS2 = document.getElementById('tiltAngleBS2');
+
+
+        const moveMinusBtn = document.getElementById('moveMinus');
+        const movePlusBtn = document.getElementById('movePlus');
+        const takeReadingBtn = document.getElementById('takeReadingBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const submitBtn = document.getElementById('submitBtn');
+        const checkBtn = document.getElementById('checkBtn');
+        const plotBtn = document.getElementById('plotBtn');
+        const reportBtn = document.getElementById('reportBtn');
+
+        const readingsTableBody = document.querySelector('#readingsTable tbody');
+        const resultsTableBody1 = document.querySelector('#resultsTable1 tbody');
+        const resultsTableBody2 = document.querySelector('#resultsTable2 tbody');
+        const plotCanvas = document.getElementById('plotCanvas');
+        
+        // --- STATE VARIABLES ---
+        let isDragging = false;
+        let userName = '';
+        let readings = [];
+        let plotChart = null;
+        const MAX_READINGS = 10;
+        const PN_DBM = -98.84; // Fixed Noise Power in dBm
+
+        // --- SIMULATION CONSTANTS ---
+        const H_BS = 35.0; // Base station height in meters, from image
+        let H_MS = 1.5; // Mobile station height in meters, now variable
+        const TOTAL_DISTANCE_M = 1000; // Total distance between BS1 and BS2 in meters
+
+        // --- UI SETUP & EVENT LISTENERS ---
+        startExp5A.addEventListener('click', () => {
+            initialView.classList.add('hidden');
+            nameModal.classList.remove('hidden');
+            userNameInput.focus();
+        });
+
+        submitNameBtn.addEventListener('click', () => {
+            userName = userNameInput.value.trim();
+            if (userName) {
+                welcomeMessage.textContent = `Welcome! ${userName.toUpperCase()}`;
+                nameModal.classList.add('hidden');
+                experimentView.classList.remove('hidden');
+                initializeExperiment();
+            } else {
+                showCustomAlert("Please enter your name.");
+            }
+        });
+        
+        userNameInput.addEventListener('keyup', (e) => {
+            if (e.key === 'Enter') submitNameBtn.click();
+        });
+
+        ms.addEventListener('mousedown', (e) => { isDragging = true; ms.style.cursor = 'grabbing'; });
+        document.addEventListener('mouseup', () => { isDragging = false; ms.style.cursor = 'grab'; });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            const rect = simContainer.getBoundingClientRect();
+            
+            // Horizontal dragging
+            let x = e.clientX - rect.left - (ms.width / 2);
+            x = Math.max(0, Math.min(x, rect.width - ms.width));
+            ms.style.left = `${x}px`;
+
+            // Vertical dragging
+            let y = e.clientY - rect.top - (ms.height / 2);
+            const minY = 0; // Set upper bound to the top of the container
+            const maxY = rect.height - ms.height - 10; // Lower bound for dragging
+            y = Math.max(minY, Math.min(y, maxY));
+            ms.style.top = `${y}px`;
+            
+            // Update H_MS based on vertical position
+            const maxPixelY = maxY - minY;
+            const currentPixelY = y - minY;
+            H_MS = 45 * (1 - (currentPixelY / maxPixelY)); // Scale from 0 to 45m
+            H_MS = Math.max(1.5, H_MS); // Ensure minimum height
+
+            updateLiveInfo();
+        });
+
+        movePlusBtn.addEventListener('click', () => moveMS(10));
+        moveMinusBtn.addEventListener('click', () => moveMS(-10));
+        takeReadingBtn.addEventListener('click', takeReading);
+        resetBtn.addEventListener('click', () => {
+            showCustomConfirm("Are you sure you want to reset the experiment?", () => {
+                initializeExperiment();
+            });
+        });
+        
+        submitBtn.addEventListener('click', () => {
+            submitBtn.disabled = true;
+            checkBtn.disabled = false;
+        });
+
+        checkBtn.addEventListener('click', () => {
+            checkResults();
+            checkBtn.disabled = true;
+            plotBtn.disabled = false;
+            reportBtn.disabled = false;
+        });
+
+        plotBtn.addEventListener('click', plotResults);
+        reportBtn.addEventListener('click', generateReport);
+
+        [pt1Input, pt2Input, fcInput, fc2Input, verticalBeamCheckbox, shadowingCheckbox, tiltAngleSelectBS1, tiltAngleSelectBS2].forEach(el => {
+            if (el) el.addEventListener('change', updateLiveInfo);
+        });
+        
+        verticalBeamCheckbox.addEventListener('change', () => {
+            const isChecked = verticalBeamCheckbox.checked;
+            tiltControlBS1.classList.toggle('hidden', !isChecked);
+            tiltControlBS2.classList.toggle('hidden', !isChecked);
+            updateLiveInfo();
+        });
+
+        // --- CORE FUNCTIONS ---
+        function initializeExperiment() {
+            readings = [];
+            readingsTableBody.innerHTML = '';
+            resultsTableBody1.innerHTML = '';
+            resultsTableBody2.innerHTML = '';
+
+            for (let i = 0; i < MAX_READINGS; i++) {
+                const newRow1 = document.createElement('tr');
+                newRow1.innerHTML = `
+                    <td class="dist1 w-1/3 text-xs p-1">0.0m</td>
+                    <td class="w-2/3 p-1">
+                        <div class="flex items-center justify-between gap-1">
+                            <input type="number" class="user-sinr1 w-1/2 text-center bg-white text-xs p-1 rounded" value="0" step="0.01" disabled>
+                            <span class="calc-sinr1 w-1/2 text-right font-bold"></span>
+                        </div>
+                    </td>
+                `;
+                resultsTableBody1.appendChild(newRow1);
+
+                const newRow2 = document.createElement('tr');
+                newRow2.innerHTML = `
+                    <td class="dist2 w-1/3 text-xs p-1">0.0m</td>
+                    <td class="w-2/3 p-1">
+                        <div class="flex items-center justify-between gap-1">
+                            <input type="number" class="user-sinr2 w-1/2 text-center bg-white text-xs p-1 rounded" value="0" step="0.01" disabled>
+                            <span class="calc-sinr2 w-1/2 text-right font-bold"></span>
+                        </div>
+                    </td>
+                `;
+                resultsTableBody2.appendChild(newRow2);
+            }
+
+            const initialX = simContainer.clientWidth * 0.3;
+            ms.style.left = `${initialX}px`;
+            ms.style.top = ''; // Reset top position
+            ms.style.bottom = '50px'; // Re-apply initial bottom style
+            H_MS = 1.5; // Reset height
+            
+            if (plotChart) {
+                plotChart.destroy();
+                plotChart = null;
+            }
+            
+            takeReadingBtn.disabled = false;
+            takeReadingBtn.textContent = 'Take Reading';
+            takeReadingBtn.classList.add('btn');
+            takeReadingBtn.classList.remove('bg-red-500', 'cursor-not-allowed');
+
+            submitBtn.disabled = false;
+            checkBtn.disabled = true;
+            plotBtn.disabled = true;
+            reportBtn.disabled = true;
+
+            verticalBeamCheckbox.checked = false;
+            tiltControlBS1.classList.add('hidden');
+            tiltControlBS2.classList.add('hidden');
+            tiltAngleSelectBS1.value = "0";
+            tiltAngleSelectBS2.value = "0";
+            updateLiveInfo();
+        }
+
+        function moveMS(dx) {
+            const currentLeft = parseFloat(ms.style.left) || 0;
+            const newLeft = Math.max(0, Math.min(currentLeft + dx, simContainer.clientWidth - ms.width));
+            ms.style.left = `${newLeft}px`;
+            updateLiveInfo();
+        }
+
+        function getCurrentValues() {
+            const simWidth = simContainer.clientWidth;
+            const bs1X = bs1.offsetLeft + bs1.width / 2;
+            const bs2X = bs2.offsetLeft + bs2.width / 2;
+            const msX = ms.offsetLeft + ms.width / 2;
+            const pixelDist = bs2X - bs1X;
+            const scale = TOTAL_DISTANCE_M / pixelDist;
+            const d1 = Math.max(1, Math.abs(msX - bs1X) * scale);
+            const d2 = Math.max(1, Math.abs(msX - bs2X) * scale);
+            const pt1 = parseFloat(pt1Input.value);
+            const pt2 = parseFloat(pt2Input.value);
+            const pr1 = calculateReceivedPower(pt1, d1, 1);
+            const pr2 = calculateReceivedPower(pt2, d2, 2);
+            return { d1, d2, pr1, pr2 };
+        }
+
+        function updateLiveInfo() {
+            const { d1, d2, pr1, pr2 } = getCurrentValues();
+            
+            // Update tooltip content
+            mobileTooltip.innerHTML = `
+                hRx=${H_MS.toFixed(1)}m<br>
+                Dist1=${d1.toFixed(1)}m<br>
+                Pr1=${pr1.toFixed(2)}dBm<br>
+                Dist2=${d2.toFixed(1)}m<br>
+                Pr2=${pr2.toFixed(2)}dBm
+            `;
+            
+            // Update tooltip position
+            mobileTooltip.style.left = `${ms.offsetLeft + ms.width / 2}px`;
+            mobileTooltip.style.top = `${ms.offsetTop}px`;
+            
+            // Update other displays
+            pr1Display.textContent = pr1.toFixed(2);
+            pr2Display.textContent = pr2.toFixed(2);
+            pn1Display.textContent = PN_DBM;
+            pn2Display.textContent = PN_DBM;
+        }
+        
+        function calculateHataPathLoss(fc_ghz, d_m) {
+            const fc_mhz = fc_ghz * 1000;
+            const d_km = d_m / 1000;
+            if (d_km <= 0) return 0;
+            const a_hm = (1.1 * Math.log10(fc_mhz) - 0.7) * H_MS - (1.56 * Math.log10(fc_mhz) - 0.8);
+            const pathLoss = 69.55 + 26.16 * Math.log10(fc_mhz) - 13.82 * Math.log10(H_BS) - a_hm + (44.9 - 6.55 * Math.log10(H_BS)) * Math.log10(d_km);
+            return pathLoss;
+        }
+
+        function calculateReceivedPower(pt, d, bsIndex) {
+            const fc = (bsIndex === 1) ? parseFloat(fcInput.value) : parseFloat(fc2Input.value);
+            let pathLoss = calculateHataPathLoss(fc, d);
+            let pr = pt - pathLoss;
+
+            if (verticalBeamCheckbox.checked) {
+                const tilt = (bsIndex === 1) ? parseFloat(tiltAngleSelectBS1.value) : parseFloat(tiltAngleSelectBS2.value);
+                const verticalAngle = Math.atan((H_BS - H_MS) / d) * (180 / Math.PI);
+                const theta_3dB = 10;
+                const A_m = 20;
+                let angleDiff = verticalAngle - tilt;
+                let beamLoss = 12 * Math.pow(angleDiff / theta_3dB, 2);
+                beamLoss = Math.min(beamLoss, A_m);
+                pr -= beamLoss;
+            }
+
+            if (shadowingCheckbox.checked) {
+                const stdDev = 6;
+                let u, v, s;
+                do {
+                    u = Math.random() * 2 - 1;
+                    v = Math.random() * 2 - 1;
+                    s = u * u + v * v;
+                } while (s >= 1 || s === 0);
+                let z = u * Math.sqrt(-2 * Math.log(s) / s);
+                let shadowFading = z * stdDev;
+                pr += shadowFading;
+            }
+            return pr;
+        }
+
+        function takeReading() {
+            if (readings.length >= MAX_READINGS) {
+                showCustomAlert(`You can only take ${MAX_READINGS} readings.`);
+                return;
+            }
+            const { d1, d2, pr1, pr2 } = getCurrentValues();
+            readings.push({ d1, d2, pr1, pr2, hRx: H_MS });
+
+            const newReadingRow = document.createElement('tr');
+            newReadingRow.innerHTML = `<td>${pr1.toFixed(2)}</td><td>${d1.toFixed(1)}</td><td>${pr2.toFixed(2)}</td><td>${d2.toFixed(1)}</td>`;
+            readingsTableBody.appendChild(newReadingRow);
+
+            const resultRow1 = resultsTableBody1.children[readings.length - 1];
+            if(resultRow1) {
+                resultRow1.querySelector('.dist1').textContent = `${d1.toFixed(1)}m`;
+                resultRow1.querySelector('.user-sinr1').disabled = false;
+            }
+
+            const resultRow2 = resultsTableBody2.children[readings.length - 1];
+            if(resultRow2) {
+                resultRow2.querySelector('.dist2').textContent = `${d2.toFixed(1)}m`;
+                resultRow2.querySelector('.user-sinr2').disabled = false;
+            }
+
+            if (readings.length >= MAX_READINGS) {
+                takeReadingBtn.disabled = true;
+                takeReadingBtn.textContent = 'Readings Full';
+                takeReadingBtn.classList.remove('btn');
+                takeReadingBtn.classList.add('bg-red-500', 'cursor-not-allowed');
+            }
+        }
+
+        function calculateSINR(pr1_dBm, pr2_dBm) {
+            const pn_dBm = PN_DBM;
+            const pr1_watt = 0.001 * Math.pow(10, pr1_dBm / 10);
+            const pr2_watt = 0.001 * Math.pow(10, pr2_dBm / 10);
+            const pn_watt = 0.001 * Math.pow(10, pn_dBm / 10);
+            const sinr1_watt = pr1_watt / (pr2_watt + pn_watt);
+            const sinr2_watt = pr2_watt / (pr1_watt + pn_watt);
+            const sinr1_dB = 10 * Math.log10(sinr1_watt);
+            const sinr2_dB = 10 * Math.log10(sinr2_watt);
+            return { sinr1_dB, sinr2_dB };
+        }
+
+        function checkResults() {
+            if (readings.length === 0) {
+                showCustomAlert("Please take some readings first.");
+                return;
+            }
+            const resultRows1 = document.querySelectorAll('#resultsTable1 tbody tr');
+            const resultRows2 = document.querySelectorAll('#resultsTable2 tbody tr');
+
+            readings.forEach((reading, index) => {
+                const { sinr1_dB, sinr2_dB } = calculateSINR(reading.pr1, reading.pr2);
+
+                if (index < resultRows1.length) {
+                    const row1 = resultRows1[index];
+                    const userInput1El = row1.querySelector('.user-sinr1');
+                    const userInput1 = parseFloat(userInput1El.value);
+                    userInput1El.style.backgroundColor = (!isNaN(userInput1) && Math.abs(userInput1 - sinr1_dB) < 0.1) ? '#d4edda' : '#f8d7da';
+                    row1.querySelector('.calc-sinr1').textContent = sinr1_dB.toFixed(2);
+                }
+
+                if (index < resultRows2.length) {
+                    const row2 = resultRows2[index];
+                    const userInput2El = row2.querySelector('.user-sinr2');
+                    const userInput2 = parseFloat(userInput2El.value);
+                    userInput2El.style.backgroundColor = (!isNaN(userInput2) && Math.abs(userInput2 - sinr2_dB) < 0.1) ? '#d4edda' : '#f8d7da';
+                    row2.querySelector('.calc-sinr2').textContent = sinr2_dB.toFixed(2);
+                }
+            });
+        }
+        
+        function plotResults() {
+            if (readings.length === 0) {
+                showCustomAlert("Please take some readings first to plot.");
+                return;
+            }
+            if (plotChart) plotChart.destroy();
+
+            const labels = readings.map(r => r.d1.toFixed(1));
+            const sinr1Data = readings.map(r => calculateSINR(r.pr1, r.pr2).sinr1_dB);
+            const sinr2Data = readings.map(r => calculateSINR(r.pr1, r.pr2).sinr2_dB);
+
+            const userSinr1Inputs = document.querySelectorAll('.user-sinr1');
+            const userSinr1Data = Array.from(userSinr1Inputs).slice(0, readings.length).map(input => parseFloat(input.value) || null);
+
+            const userSinr2Inputs = document.querySelectorAll('.user-sinr2');
+            const userSinr2Data = Array.from(userSinr2Inputs).slice(0, readings.length).map(input => parseFloat(input.value) || null);
+
+
+            const ctx = plotCanvas.getContext('2d');
+            plotChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'SINR1',
+                            data: sinr1Data,
+                            borderColor: 'black',
+                            backgroundColor: 'rgba(0, 0, 0, 0.1)',
+                            tension: 0.1
+                        },
+                        {
+                            label: 'SINR2',
+                            data: sinr2Data,
+                            borderColor: 'red',
+                            backgroundColor: 'rgba(255, 0, 0, 0.1)',
+                            tension: 0.1
+                        },
+                        {
+                            label: 'SINR1(EnteredValue)',
+                            data: userSinr1Data,
+                            borderColor: 'blue',
+                            backgroundColor: 'rgba(0, 0, 255, 0.1)',
+                            tension: 0.1
+                        },
+                        {
+                            label: 'SINR2(EnteredValue)',
+                            data: userSinr2Data,
+                            borderColor: 'green',
+                            backgroundColor: 'rgba(0, 128, 0, 0.1)',
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'SINR vs Distance',
+                            font: {
+                                size: 16
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Distance(m)'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'SINR(dB)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        async function generateReport() {
+            if (readings.length === 0) {
+                showCustomAlert("No data to report. Please perform the experiment first.");
+                return;
+            }
+
+            const reportBtn = document.getElementById('reportBtn');
+            reportBtn.textContent = 'Generating...';
+            reportBtn.disabled = true;
+            
+            const graphImgSrc = plotChart ? plotChart.toBase64Image() : '';
+
+            let reportHtml = `
+                <div style="font-family: 'Verdana', sans-serif; font-size: 12px; display: flex; flex-direction: column; height: 1122px; padding: 20px;">
+                    <div style="flex-grow: 1;">
+                        <h3 style="text-align: center; font-size: 16px; font-weight: bold; margin-bottom: 16px;">Experiment Report</h3>
+                        <p><strong>Experiment Report for:</strong> ${userName}</p>
+                        <p><strong>Date:</strong> ${new Date().toLocaleString()}</p>
+                        <br>
+                        <h4 style="font-size: 14px; font-weight: bold;">--- Simulation Parameters ---</h4>
+                        <p>Power Tx BS1: ${pt1Input.value} dBm</p>
+                        <p>Power Tx BS2: ${pt2Input.value} dBm</p>
+                        <p>Noise Power: ${PN_DBM} dBm</p>
+                        <p>Frequency: ${fcInput.value} GHz</p>
+                        <p>Vertical Beam Pattern: ${verticalBeamCheckbox.checked ? `Enabled (Tilt BS1: ${tiltAngleSelectBS1.value}°, Tilt BS2: ${tiltAngleSelectBS2.value}°)` : 'Disabled'}</p>
+                        <p>Shadowing: ${shadowingCheckbox.checked ? 'Enabled' : 'Disabled'}</p>
+                        <br>
+                        <h4 style="font-size: 14px; font-weight: bold;">--- Data Readings & Calculated SINR ---</h4>
+                        <table style="width:100%; border-collapse: collapse; font-size: 10px; margin-top: 8px;">
+                            <thead>
+                                <tr style="background-color: #a0c7e4;">
+                                    <th style="border: 1px solid #8ab6d6; padding: 4px;">#</th>
+                                    <th style="border: 1px solid #8ab6d6; padding: 4px;">hRx(m)</th>
+                                    <th style="border: 1px solid #8ab6d6; padding: 4px;">Pr1(dBm)</th>
+                                    <th style="border: 1px solid #8ab6d6; padding: 4px;">d1(m)</th>
+                                    <th style="border: 1px solid #8ab6d6; padding: 4px;">Pr2(dBm)</th>
+                                    <th style="border: 1px solid #8ab6d6; padding: 4px;">d2(m)</th>
+                                    <th style="border: 1px solid #8ab6d6; padding: 4px;">SINR1(dB)</th>
+                                    <th style="border: 1px solid #8ab6d6; padding: 4px;">SINR2(dB)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+            `;
+
+            readings.forEach((r, i) => {
+                const { sinr1_dB, sinr2_dB } = calculateSINR(r.pr1, r.pr2);
+                reportHtml += `
+                    <tr>
+                        <td style="border: 1px solid #8ab6d6; padding: 4px;">${i + 1}</td>
+                        <td style="border: 1px solid #8ab6d6; padding: 4px;">${r.hRx.toFixed(1)}</td>
+                        <td style="border: 1px solid #8ab6d6; padding: 4px;">${r.pr1.toFixed(2)}</td>
+                        <td style="border: 1px solid #8ab6d6; padding: 4px;">${r.d1.toFixed(1)}</td>
+                        <td style="border: 1px solid #8ab6d6; padding: 4px;">${r.pr2.toFixed(2)}</td>
+                        <td style="border: 1px solid #8ab6d6; padding: 4px;">${r.d2.toFixed(1)}</td>
+                        <td style="border: 1px solid #8ab6d6; padding: 4px;">${sinr1_dB.toFixed(2)}</td>
+                        <td style="border: 1px solid #8ab6d6; padding: 4px;">${sinr2_dB.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+            reportHtml += `
+                            </tbody>
+                        </table>
+                        <div style="text-align: center; margin-top: 20px;">
+                            <img src="${graphImgSrc}" style="max-width: 100%; max-height: 350px; object-fit: contain;" />
+                        </div>
+                    </div>
+                    <div style="flex-shrink: 0; display: flex; justify-content: space-between; font-size: 12px; margin-top: auto; padding-top: 40px;">
+                        <p>(Signature of the Candidate)</p>
+                        <p>(Signature of Faculty)</p>
+                    </div>
+                </div>
+            `;
+
+            const reportContentForPdf = document.getElementById('reportContentForPdf');
+            reportContentForPdf.innerHTML = reportHtml;
+
+            const { jsPDF } = window.jspdf;
+            const pdfContainer = document.getElementById('pdf-report-container');
+            pdfContainer.classList.remove('hidden');
+
+            try {
+                const canvas = await html2canvas(pdfContainer, { scale: 2 });
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jsPDF({
+                    orientation: 'p',
+                    unit: 'mm',
+                    format: 'a4'
+                });
+
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const imgProps = pdf.getImageProperties(imgData);
+                const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save('SINR_Experiment_Report.pdf');
+
+            } catch (error) {
+                console.error("Error generating PDF:", error);
+                showCustomAlert("Could not generate the report PDF.");
+            } finally {
+                pdfContainer.classList.add('hidden');
+                reportBtn.textContent = 'REPORT';
+                reportBtn.disabled = false;
+            }
+        }
+
+        function showCustomAlert(message) {
+            const alertModal = document.createElement('div');
+            alertModal.className = 'modal-overlay';
+            alertModal.innerHTML = `<div class="modal-content text-center"><p class="mb-4">${message}</p><button class="btn px-6 py-2 rounded-md">OK</button></div>`;
+            document.body.appendChild(alertModal);
+            alertModal.querySelector('button').addEventListener('click', () => {
+                document.body.removeChild(alertModal);
+            });
+        }
+
+        function showCustomConfirm(message, callback) {
+            const confirmModal = document.createElement('div');
+            confirmModal.className = 'modal-overlay';
+            confirmModal.innerHTML = `<div class="modal-content text-center"><p class="mb-4">${message}</p><div class="space-x-4"><button id="confirmOk" class="btn px-6 py-2 rounded-md">OK</button><button id="confirmCancel" class="btn-secondary px-6 py-2 rounded-md">Cancel</button></div></div>`;
+            document.body.appendChild(confirmModal);
+            confirmModal.querySelector('#confirmOk').addEventListener('click', () => {
+                callback();
+                document.body.removeChild(confirmModal);
+            });
+            confirmModal.querySelector('#confirmCancel').addEventListener('click', () => {
+                document.body.removeChild(confirmModal);
+            });
+        }
+
+        // Set initial state on load
+        ms.style.left = '30%';
+        updateLiveInfo();
+
+    });
+    </script>
+<script src="../assets/js/iframeResize.js"></script>
+        
+        </body>
+</html>

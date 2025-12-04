@@ -1,0 +1,116 @@
+  {
+	  "version": 2.0,
+  "questions": [
+      {
+    "question": "1. In a cellular system, what does SINR stand for?",
+    "answers": {
+      "a": "Signal-to-Interference-plus-Noise Ratio",
+      "b": "Signal-to-Internet-plus-Network Ratio",
+      "c": "Standard-Interference-and-Noise-Ratio",
+      "d": "Standard-Internet-and-Network-Ratio"
+    },
+    "correctAnswer": "a",
+    "difficulty": "beginner"
+  },
+  {
+    "question": "2. For a 'downlink' SINR calculation, what is considered the 'desired signal' at the mobile phone?",
+    "answers": {
+      "a": "The signal from another mobile phone.",
+      "b": "The signal from the user's own base station.",
+      "c": "The signal from a distant, co-channel base station.",
+      "d": "The background noise from the environment."
+    },
+    "correctAnswer": "b",
+    "difficulty": "beginner"
+  },
+  {
+    "question": "3. What is the primary source of 'interference' in a downlink SINR calculation?",
+    "answers": {
+      "a": "Signals from other mobile phones in the same cell.",
+      "b": "Weather and atmospheric conditions.",
+      "c": "Signals from other base stations using the same frequency.",
+      "d": "The mobile phone's own internal components."
+    },
+    "correctAnswer": "c",
+    "difficulty": "medium"
+  },
+  {
+    "question": "4. What does 'antenna beam tilt' refer to?",
+    "answers": {
+      "a": "Physically moving the base station tower.",
+      "b": "Changing the frequency of the antenna.",
+      "c": "Adjusting the horizontal (left-right) direction of the signal.",
+      "d": "Adjusting the vertical (up-down) angle of the main signal lobe."
+    },
+    "correctAnswer": "d",
+    "difficulty": "beginner"
+  },
+  {
+    "question": "5. What is a primary reason for applying 'downtilt' to a base station antenna?",
+    "answers": {
+      "a": "To increase the signal strength in neighboring cells.",
+      "b": "To reduce interference to distant cells and control the cell's coverage area.",
+      "c": "To point the signal up towards satellites.",
+      "d": "To make the signal travel a longer horizontal distance."
+    },
+    "correctAnswer": "b",
+    "difficulty": "medium"
+  },
+  {
+    "question": "6. If a base station *increases* its antenna downtilt, what is the likely effect on the desired signal strength for a user at the *far edge* of its cell?",
+    "answers": {
+      "a": "The signal strength will increase significantly.",
+      "b": "The signal strength will decrease.",
+      "c": "The signal strength will not be affected.",
+      "d": "The noise level will increase."
+    },
+    "correctAnswer": "b",
+    "difficulty": "hard"
+  },
+  {
+    "question": "7. How does *increasing* the downtilt of an *interfering* base station generally affect the SINR of a user in a *different*, distant cell?",
+    "answers": {
+      "a": "It decreases the SINR by increasing interference.",
+      "b": "It has no effect on the SINR.",
+      "c": "It increases the SINR by reducing the interference from that station.",
+      "d": "It increases the noise level."
+    },
+    "correctAnswer": "c",
+    "difficulty": "hard"
+  },
+  {
+    "question": "8. When calculating SINR, why must values in dBm first be converted to a linear scale (like watts)?",
+    "answers": {
+      "a": "It is not necessary; they can be added directly.",
+      "b": "Because decibels are logarithmic and cannot be directly added or divided in a ratio.",
+      "c": "Because watts are a more accurate measurement.",
+      "d": "Because the formulas only work with large numbers."
+    },
+    "correctAnswer": "b",
+    "difficulty": "medium"
+  },
+  {
+    "question": "9. A high SINR value generally indicates...",
+    "answers": {
+      "a": "a poor quality connection with low data speeds.",
+      "b": "a good quality connection with high data speeds.",
+      "c": "that the noise is much stronger than the signal.",
+      "d": "that the interference is much stronger than the signal."
+    },
+    "correctAnswer": "b",
+    "difficulty": "beginner"
+  },
+  {
+    "question": "10. In a downlink scenario, which component of SINR is *least* likely to be affected by antenna beam tilt?",
+    "answers": {
+      "a": "The desired signal level.",
+      "b": "The co-channel interference level.",
+      "c": "The background noise level.",
+      "d": "The signal from the serving base station."
+    },
+    "correctAnswer": "c",
+    "difficulty": "medium"
+  }
+
+  ]
+}
